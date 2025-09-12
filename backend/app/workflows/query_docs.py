@@ -1,4 +1,4 @@
-# app/workflows/query_docs_runnable.py
+# app/workflows/query_docs.py
 from dotenv import load_dotenv
 import os
 import logging
@@ -85,37 +85,90 @@ def format_docs(retrieved_docs):
 # -----------------------------
 # Main query function
 # -----------------------------
-def ask_doc_runnable(question: str, selected_doc_ids: Optional[List[str]] = None) -> Tuple[str, List[str]]:
+# -----------------------------
+# Helpers
+# -----------------------------
+def format_docs_safe(retrieved_docs, max_chunks_per_doc: int = 2, max_chunk_length: int = 500):
+    """
+    Safely format retrieved docs into a single string for LLM.
+    - Limits number of chunks per doc
+    - Truncates chunk content to max_chunk_length
+    """
+    formatted = []
+    for doc in retrieved_docs[:max_chunks_per_doc]:
+        content = doc.page_content
+        if len(content) > max_chunk_length:
+            content = content[:max_chunk_length] + "..."
+        formatted.append(content)
+    return "\n\n".join(formatted)
+
+# -----------------------------
+# Main query function (updated)
+# -----------------------------
+def ask_doc_runnable(question: str, selected_doc_ids: Optional[List[str]] = None, top_k: int = 3, max_chunks_per_doc: int = 2, max_chunk_length: int = 500) -> Tuple[str, List[str]]:
+    """
+    Ask a question to the KB.
+    - Only considers chunks from selected_doc_ids if provided.
+    - Limits number of chunks per doc and chunk length sent to LLM.
+    """
     if not question.strip():
         return "Please provide a valid question.", []
 
     db = get_vectordb()
     chat = get_chat_model()
 
+    # No vector DB → fallback to LLM
     if db is None:
         ans_msg = chat.invoke(question)
         answer = ans_msg.content if isinstance(ans_msg, AIMessage) else str(ans_msg)
         return answer, []
 
-    # Vector DB search
-    search_kwargs = {"k": 3}
+    # Ensure filter is applied if selected_doc_ids is provided
+    search_kwargs = {"k": top_k}
     if selected_doc_ids:
         search_kwargs["filter"] = {"doc_id": {"$in": selected_doc_ids}}
 
+    # Similarity search
     docs = db.similarity_search(question, **search_kwargs)
+
+    # If no docs found → fallback
     if not docs:
         ans_msg = chat.invoke(question)
         answer = ans_msg.content if isinstance(ans_msg, AIMessage) else str(ans_msg)
         return answer, []
 
-    sources = [d.page_content[:200] + "..." if len(d.page_content) > 200 else d.page_content for d in docs]
+    # Prepare sources (for frontend)
+    sources = [
+        d.page_content[:200] + "..." if len(d.page_content) > 200 else d.page_content
+        for d in docs
+        if not selected_doc_ids or d.metadata.get("doc_id") in selected_doc_ids
+    ]
+
+    # Prepare context for LLM
+    context_chunks = []
+    doc_chunk_count = {}
+    for doc in docs:
+        doc_id = doc.metadata.get("doc_id")
+        if selected_doc_ids and doc_id not in selected_doc_ids:
+            continue
+
+        doc_chunk_count.setdefault(doc_id, 0)
+        if doc_chunk_count[doc_id] >= max_chunks_per_doc:
+            continue
+
+        content = doc.page_content
+        if len(content) > max_chunk_length:
+            content = content[:max_chunk_length] + "..."
+        context_chunks.append(content)
+        doc_chunk_count[doc_id] += 1
+
+    context_str = "\n\n".join(context_chunks)
 
     # RunnableParallel chain
     parallel_chain = RunnableParallel({
-        'context': RunnableLambda(lambda _: format_docs(docs)),
+        'context': RunnableLambda(lambda _: context_str),
         'question': RunnablePassthrough()
     })
-
     main_chain = parallel_chain | prompt | chat | parser
 
     answer = main_chain.invoke(question)
