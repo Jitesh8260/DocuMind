@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, FileText, Zap, Shield, Bot, ChevronDown, Sparkles, Users, Clock, Brain } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+
 
 export default function DocumindLanding() {
+    const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -25,7 +29,7 @@ export default function DocumindLanding() {
 
   const handleGetStarted = () => {
     // Redirect to login page
-    window.location.href = '/login';
+   navigate('/login');
   };
 
   return (
