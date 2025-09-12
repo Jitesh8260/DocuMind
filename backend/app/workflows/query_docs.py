@@ -5,8 +5,6 @@ import logging
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-from langchain_community.vectorstores import Chroma
-from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace, HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
@@ -22,34 +20,43 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM
 PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
 
 # -----------------------------
-# Embeddings
+# Lazy-loaded objects
 # -----------------------------
-embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-
-# -----------------------------
-# Chroma DB
-# -----------------------------
+embedding_model = None
+chat_model = None
 vectordb = None
-try:
-    persist_path = Path(PERSIST_DIR)
-    if persist_path.exists() and any(persist_path.iterdir()):
-        vectordb = Chroma(persist_directory=PERSIST_DIR, embedding_function=embedding_model)
-        logger.info(f"Chroma DB loaded from {PERSIST_DIR}")
-    else:
-        logger.warning(f"No existing data in {PERSIST_DIR}")
-except Exception as e:
-    logger.error(f"Failed to initialize Chroma DB: {e}")
 
-# -----------------------------
-# HuggingFace Endpoint LLM
-# -----------------------------
-llm_endpoint = HuggingFaceEndpoint(
-    model=HF_MODEL,
-    task="text-generation",
-    huggingfacehub_api_token=HF_TOKEN,
-    max_new_tokens=512
-)
-chat_model = ChatHuggingFace(llm=llm_endpoint)
+def get_embedding_model():
+    global embedding_model
+    if embedding_model is None:
+        from langchain_huggingface import HuggingFaceEmbeddings
+        embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+    return embedding_model
+
+def get_chat_model():
+    global chat_model
+    if chat_model is None:
+        from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+        llm_endpoint = HuggingFaceEndpoint(
+            model=HF_MODEL,
+            task="text-generation",
+            huggingfacehub_api_token=HF_TOKEN,
+            max_new_tokens=512
+        )
+        chat_model = ChatHuggingFace(llm=llm_endpoint)
+    return chat_model
+
+def get_vectordb():
+    global vectordb
+    if vectordb is None:
+        from langchain_community.vectorstores import Chroma
+        persist_path = Path(PERSIST_DIR)
+        if persist_path.exists() and any(persist_path.iterdir()):
+            vectordb = Chroma(persist_directory=PERSIST_DIR, embedding_function=get_embedding_model())
+            logger.info(f"Chroma DB loaded from {PERSIST_DIR}")
+        else:
+            logger.warning(f"No existing data in {PERSIST_DIR}")
+    return vectordb
 
 # -----------------------------
 # Prompt
@@ -76,14 +83,17 @@ def format_docs(retrieved_docs):
     return "\n\n".join(doc.page_content for doc in retrieved_docs)
 
 # -----------------------------
-# Main query function using Runnable style
+# Main query function
 # -----------------------------
 def ask_doc_runnable(question: str, selected_doc_ids: Optional[List[str]] = None) -> Tuple[str, List[str]]:
     if not question.strip():
         return "Please provide a valid question.", []
 
-    if vectordb is None:
-        ans_msg = chat_model.invoke(question)
+    db = get_vectordb()
+    chat = get_chat_model()
+
+    if db is None:
+        ans_msg = chat.invoke(question)
         answer = ans_msg.content if isinstance(ans_msg, AIMessage) else str(ans_msg)
         return answer, []
 
@@ -92,21 +102,21 @@ def ask_doc_runnable(question: str, selected_doc_ids: Optional[List[str]] = None
     if selected_doc_ids:
         search_kwargs["filter"] = {"doc_id": {"$in": selected_doc_ids}}
 
-    docs = vectordb.similarity_search(question, **search_kwargs)
+    docs = db.similarity_search(question, **search_kwargs)
     if not docs:
-        ans_msg = chat_model.invoke(question)
+        ans_msg = chat.invoke(question)
         answer = ans_msg.content if isinstance(ans_msg, AIMessage) else str(ans_msg)
         return answer, []
 
     sources = [d.page_content[:200] + "..." if len(d.page_content) > 200 else d.page_content for d in docs]
 
-    # RunnableParallel style chain
+    # RunnableParallel chain
     parallel_chain = RunnableParallel({
-        'context': RunnableLambda(lambda _: format_docs(docs)),  # Chroma search already done
+        'context': RunnableLambda(lambda _: format_docs(docs)),
         'question': RunnablePassthrough()
     })
 
-    main_chain = parallel_chain | prompt | chat_model | parser
+    main_chain = parallel_chain | prompt | chat | parser
 
     answer = main_chain.invoke(question)
     return answer, sources
@@ -115,16 +125,19 @@ def ask_doc_runnable(question: str, selected_doc_ids: Optional[List[str]] = None
 # Health check
 # -----------------------------
 def health_check() -> dict:
-    status = {"llm_api": False, "embedding_api": False, "vectordb": vectordb is not None, "hf_token": bool(HF_TOKEN)}
+    status = {"llm_api": False, "embedding_api": False, "vectordb": bool(get_vectordb()), "hf_token": bool(HF_TOKEN)}
+    chat = get_chat_model()
+    emb = get_embedding_model()
+
     try:
-        resp = chat_model.invoke("Hello")
+        resp = chat.invoke("Hello")
         resp_text = resp.content if isinstance(resp, AIMessage) else str(resp)
         status["llm_api"] = bool(resp_text)
     except Exception as e:
         logger.error(f"LLM health check failed: {e}")
     try:
-        emb = embedding_model.embed_query("test")
-        status["embedding_api"] = bool(emb)
+        query_emb = emb.embed_query("test")
+        status["embedding_api"] = bool(query_emb)
     except Exception as e:
         logger.error(f"Embedding health check failed: {e}")
     return status
