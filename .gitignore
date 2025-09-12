@@ -1,0 +1,42 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Chroma DB persistence folder
+chroma_db/
+
+# Environment / secrets
+.env
+.env.*
+*.env
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Test output
+.coverage
+htmlcov/
+pytest_cache/
