@@ -45,7 +45,7 @@ def callback(request: Request):
     # ✅ Save user info in session
     request.session["user"] = user_info
 
-    return RedirectResponse(url="http://localhost:5173/dashboard")
+    return RedirectResponse(url="https://docu-mind-two.vercel.app/dashboard")
 
 
 @router.get("/me")
