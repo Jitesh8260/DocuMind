@@ -104,7 +104,3 @@ The project can be deployed on any cloud provider:
 - Backend → Render / Railway / GCP / AWS  
 - Frontend → Vercel / Netlify  
 
----
-
-## 📜 License
-This project is for **CodeMate AI Campus Hiring Assignment**.  
