@@ -9,7 +9,10 @@ app = FastAPI(title="DocuMind Backend 🚀")
 # ✅ CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # frontend ka exact URL
+    allow_origins=[
+        "http://localhost:5173",        # local dev
+        "https://docu-mind-two.vercel.app"  # production frontend
+    ],
     allow_credentials=True,                   
     allow_methods=["*"],
     allow_headers=["*"],

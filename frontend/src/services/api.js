@@ -1,4 +1,5 @@
-const BASE = "http://localhost:8000";
+const BASE = "https://documind-bhr7.onrender.com";
+
 
 // 1️⃣ Redirect user to Google login
 export function login() {
