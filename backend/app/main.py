@@ -31,3 +31,7 @@ app.include_router(query_routes.router, prefix="/query", tags=["Query Docs"])
 @app.get("/")
 def root():
     return {"message": "DocuMind Backend is running 🚀"}
+
+@app.head("/")
+def head_root():
+    return {"message": "Everything is fine"}
