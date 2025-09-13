@@ -23,7 +23,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key="super-secret-session-key",
     same_site="none",  # cross-site cookies ke liye
-    https_only=False   # local dev ke liye
+    https_only=True   # local dev ke liye
 )
 
 # Routers
