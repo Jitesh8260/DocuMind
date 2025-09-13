@@ -15,9 +15,8 @@ requests==2.32.3
 langchain-core==0.2.33
 langchain-community==0.2.12
 langchain-huggingface==0.0.3
-langchain-chroma==0.1.4   # ✅ updated chroma integration (avoid deprecation)
+langchain-chroma==0.1.4   # ✅ handles chromadb itself
 
-chromadb==0.5.5
 huggingface-hub==0.25.2
 
 # -------------------------
