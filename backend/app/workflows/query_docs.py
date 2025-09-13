@@ -26,12 +26,18 @@ embedding_model = None
 chat_model = None
 vectordb = None
 
+
 def get_embedding_model():
     global embedding_model
     if embedding_model is None:
-        from langchain_huggingface import HuggingFaceEmbeddings
-        embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+        from langchain_huggingface import HuggingFaceEndpointEmbeddings
+        embedding_model = HuggingFaceEndpointEmbeddings(
+            model=EMBEDDING_MODEL,
+            task="feature-extraction",   # required for embeddings
+            huggingfacehub_api_token=HF_TOKEN
+        )
     return embedding_model
+
 
 def get_chat_model():
     global chat_model
@@ -46,17 +52,22 @@ def get_chat_model():
         chat_model = ChatHuggingFace(llm=llm_endpoint)
     return chat_model
 
+
 def get_vectordb():
     global vectordb
     if vectordb is None:
         from langchain_community.vectorstores import Chroma
         persist_path = Path(PERSIST_DIR)
         if persist_path.exists() and any(persist_path.iterdir()):
-            vectordb = Chroma(persist_directory=PERSIST_DIR, embedding_function=get_embedding_model())
+            vectordb = Chroma(
+                persist_directory=PERSIST_DIR,
+                embedding_function=get_embedding_model()
+            )
             logger.info(f"Chroma DB loaded from {PERSIST_DIR}")
         else:
             logger.warning(f"No existing data in {PERSIST_DIR}")
     return vectordb
+
 
 # -----------------------------
 # Prompt
@@ -76,18 +87,14 @@ Question: {question}
 )
 parser = StrOutputParser()
 
+
 # -----------------------------
 # Helpers
 # -----------------------------
 def format_docs(retrieved_docs):
     return "\n\n".join(doc.page_content for doc in retrieved_docs)
 
-# -----------------------------
-# Main query function
-# -----------------------------
-# -----------------------------
-# Helpers
-# -----------------------------
+
 def format_docs_safe(retrieved_docs, max_chunks_per_doc: int = 2, max_chunk_length: int = 500):
     """
     Safely format retrieved docs into a single string for LLM.
@@ -102,10 +109,17 @@ def format_docs_safe(retrieved_docs, max_chunks_per_doc: int = 2, max_chunk_leng
         formatted.append(content)
     return "\n\n".join(formatted)
 
+
 # -----------------------------
-# Main query function (updated)
+# Main query function
 # -----------------------------
-def ask_doc_runnable(question: str, selected_doc_ids: Optional[List[str]] = None, top_k: int = 3, max_chunks_per_doc: int = 2, max_chunk_length: int = 500) -> Tuple[str, List[str]]:
+def ask_doc_runnable(
+    question: str,
+    selected_doc_ids: Optional[List[str]] = None,
+    top_k: int = 3,
+    max_chunks_per_doc: int = 2,
+    max_chunk_length: int = 500
+) -> Tuple[str, List[str]]:
     """
     Ask a question to the KB.
     - Only considers chunks from selected_doc_ids if provided.
@@ -174,11 +188,17 @@ def ask_doc_runnable(question: str, selected_doc_ids: Optional[List[str]] = None
     answer = main_chain.invoke(question)
     return answer, sources
 
+
 # -----------------------------
 # Health check
 # -----------------------------
 def health_check() -> dict:
-    status = {"llm_api": False, "embedding_api": False, "vectordb": bool(get_vectordb()), "hf_token": bool(HF_TOKEN)}
+    status = {
+        "llm_api": False,
+        "embedding_api": False,
+        "vectordb": bool(get_vectordb()),
+        "hf_token": bool(HF_TOKEN)
+    }
     chat = get_chat_model()
     emb = get_embedding_model()
 
@@ -188,12 +208,15 @@ def health_check() -> dict:
         status["llm_api"] = bool(resp_text)
     except Exception as e:
         logger.error(f"LLM health check failed: {e}")
+
     try:
         query_emb = emb.embed_query("test")
         status["embedding_api"] = bool(query_emb)
     except Exception as e:
         logger.error(f"Embedding health check failed: {e}")
+
     return status
+
 
 # -----------------------------
 # Quick test
