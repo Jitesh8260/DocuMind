@@ -1,23 +1,19 @@
-# Core
-fastapi
-uvicorn
-python-dotenv
-pydantic
-typing-extensions
-itsdangerous
+fastapi==0.115.0
+uvicorn==0.30.6
+python-dotenv==1.0.1
+pydantic==2.9.2
+typing-extensions==4.12.2
+itsdangerous==2.2.0
 
+langchain==0.2.14
+langchain-community==0.2.12
+langchain-huggingface==0.0.3
+chromadb==0.5.5
 
-# LangChain + Vector DB
-langchain
-langchain-community
-langchain-huggingface
-chromadb
+google-auth==2.35.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+google-api-python-client==2.149.0
 
-# Google OAuth
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
-google-api-python-client
-
-# Utils
-requests
+requests==2.32.3
+huggingface-hub==0.25.2
