@@ -1,28 +1,21 @@
-# -------------------------
-# Core Backend
-# -------------------------
 fastapi==0.115.0
 uvicorn==0.30.6
 python-dotenv==1.0.1
 pydantic==2.9.2
 typing-extensions==4.12.2
 itsdangerous==2.2.0
-requests==2.32.3
 
-# -------------------------
-# LangChain (lightweight setup)
-# -------------------------
-langchain-core==0.2.33
+langchain==0.2.14
 langchain-community==0.2.12
 langchain-huggingface==0.0.3
-langchain-chroma==0.1.4   # ✅ handles chromadb itself
 
-huggingface-hub==0.25.2
+# Chroma DB ka stable wheel version
+chromadb==0.5.5
 
-# -------------------------
-# Google Auth & APIs
-# -------------------------
 google-auth==2.35.0
 google-auth-oauthlib==1.2.1
 google-auth-httplib2==0.2.0
 google-api-python-client==2.149.0
+
+requests==2.32.3
+huggingface-hub==0.25.2
