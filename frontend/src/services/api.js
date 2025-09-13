@@ -24,7 +24,7 @@ export async function checkAuth() {
 // 3️⃣ Fetch Google Docs list
 export async function fetchDocs() {
   try {
-    const res = await fetch(`${BASE}/docs/docx`, {
+    const res = await fetch(`${BASE}/documents/docx`, {
       credentials: "include",
     });
     const data = await res.json();
@@ -42,7 +42,7 @@ export async function fetchDocs() {
 // 4️⃣ Add selected docs to knowledge base
 export async function addDocsToKB(ids) {
   try {
-    const res = await fetch(`${BASE}/docs/process_docs`, {
+    const res = await fetch(`${BASE}/documents/process_docs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -58,7 +58,7 @@ export async function addDocsToKB(ids) {
 // 5️⃣ Summarize / process a single doc
 export async function summarizeDoc(id) {
   try {
-    const res = await fetch(`${BASE}/docs/process_doc/${id}`, {
+    const res = await fetch(`${BASE}/documents/process_doc/${id}`, {
       method: "POST",
       credentials: "include",
     });
@@ -88,7 +88,7 @@ export async function chat(query) {
 // 7️⃣ Fetch single doc content
 export async function fetchDocContent(doc_id) {
   try {
-    const res = await fetch(`${BASE}/docs/docs/${doc_id}`, {
+    const res = await fetch(`${BASE}/documents/docs/${doc_id}`, {
       credentials: "include",
     });
     const data = await res.json();

@@ -28,7 +28,7 @@ app.add_middleware(
 
 # Routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(docs.router, prefix="/docs", tags=["Docs Management"])
+app.include_router(docs.router, prefix="/documents", tags=["Docs Management"])
 app.include_router(query_routes.router, prefix="/query", tags=["Query Docs"])
 
 @app.get("/")

@@ -1,0 +1,12 @@
+<!-- public/favicon.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background rectangle -->
+  <rect width="64" height="64" rx="10" fill="#0f172a"/>
+  
+  <!-- D shape -->
+  <path d="M12 50 V14 H28 A16 16 0 0 1 28 50 Z" stroke="#fff" stroke-width="4" fill="none"/>
+  
+  <!-- Brain/Lightbulb stroke -->
+  <circle cx="40" cy="24" r="3" fill="#7dd3fc"/>
+  <path d="M40 28 c-2 3 -5 5 -8 5" stroke="#7dd3fc" stroke-width="3" fill="none"/>
+</svg>
