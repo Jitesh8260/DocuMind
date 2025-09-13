@@ -5,6 +5,8 @@ python-dotenv
 pydantic
 typing-extensions
 itsdangerous
+sentence-transformers
+
 
 # LangChain + Vector DB
 langchain
