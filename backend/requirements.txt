@@ -1,20 +1,22 @@
+# Core
 fastapi
 uvicorn
 python-dotenv
 pydantic
+typing-extensions
+itsdangerous
 
+# LangChain + Vector DB
 langchain
 langchain-community
 langchain-huggingface
-huggingface-hub
 chromadb
-sentence-transformers
 
+# Google OAuth
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
 google-api-python-client
 
+# Utils
 requests
-typing-extensions
-itsdangerous
